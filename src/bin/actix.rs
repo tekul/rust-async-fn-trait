@@ -1,14 +1,13 @@
+#![feature(async_fn_in_trait)]
 use actix_web::{
     web::{self, ServiceConfig},
     App, HttpRequest, HttpResponse, HttpServer,
 };
-use async_trait::async_trait;
 
 pub struct Data {
     id: String,
 }
 
-#[async_trait]
 pub trait Database {
     async fn load_data(&self, id: &str) -> Data;
 }
@@ -16,7 +15,6 @@ pub trait Database {
 #[derive(Clone)]
 struct SillyDatabase {}
 
-#[async_trait]
 impl Database for SillyDatabase {
     async fn load_data(&self, id: &str) -> Data {
         Data { id: id.to_string() }
