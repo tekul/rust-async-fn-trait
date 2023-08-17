@@ -1,13 +1,12 @@
+#![feature(async_fn_in_trait, return_type_notation)]
 use std::net::SocketAddr;
 
-use async_trait::async_trait;
 use axum::{extract::State, response::IntoResponse, routing::get, Router};
 
 pub struct Data {
     id: String,
 }
 
-#[async_trait]
 pub trait Database {
     async fn load_data(&self, id: &str) -> Data;
 }
@@ -15,7 +14,6 @@ pub trait Database {
 #[derive(Clone)]
 struct SillyDatabase {}
 
-#[async_trait]
 impl Database for SillyDatabase {
     async fn load_data(&self, id: &str) -> Data {
         Data { id: id.to_string() }
@@ -24,7 +22,7 @@ impl Database for SillyDatabase {
 
 pub fn mk_app<B>(backend: B) -> Router
 where
-    B: Clone + Send + Sync + Database + 'static,
+    B: Clone + Send + Sync + Database<load_data(): Send> + 'static,
 {
     Router::new()
         .route("/data", get(get_data::<B>))
@@ -45,7 +43,7 @@ async fn main() {
     let addr = SocketAddr::from(([0, 0, 0, 0, 0, 0, 0, 0], 8088));
     println!("Starting server on {addr}");
     axum_server::bind(addr)
-        .serve(mk_app(backend).into_make_service())
+        .serve(mk_app::<SillyDatabase>(backend).into_make_service())
         .await
         .expect("server error");
 }
